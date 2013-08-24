@@ -76,6 +76,4 @@ class Umodel(object):
     
 
 def convolve_profile():
-
-def get_b_sersic():
     pass
