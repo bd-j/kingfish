@@ -1,7 +1,11 @@
 import numpy as np
+import astropy.io.fits as pyfits
+import os
 
 def get_b_sersic(n):
-    return 2.0*n-1/3.+(4./405.)/n+(46.0/25515.0)/(n**2)+(131.0d/1148175.0)/(n**3)
+    b = (2.0*n - 1/3. + (4./405.)/n +
+         (46.0/25515.0)/(n**2) + (131.0/1148175.0)/(n**3))
+    return b
 
 class Umodel(object):
 
@@ -11,7 +15,9 @@ class Umodel(object):
 
     def profiles(self, info, radii = None, angular = True, convolved = False):
 
-        if angular is True: ptype = 'obs' else : ptype = 'phys'
+        if angular is True:
+            ptype = 'obs'
+        else : ptype = 'phys'
             
         scale_disk = info['H_disk'][ptype]
         scale_bulge = info['R_e'][ptype]
@@ -52,12 +58,12 @@ class Umodel(object):
  
     def load_disk_models(self):
         
-        kdir = '~/WRITING/KINGFISH/Uexample/plots/'
+        kdir = os.path.expanduser('~/WRITING/KINGFISH/Uexample/plots/')
         self.radii_disk, self.moduud, self.k_model = self.load_model(kdir+'model_uofr/udist_disk.fits')
 
     def load_bulge_models(self):
 
-        kdir = '~/WRITING/KINGFISH/Uexample/plots/'
+        kdir = os.path.expanduser('~/WRITING/KINGFISH/Uexample/plots/')
         self.radii_bulge, self.moduub, self.n_model = self.load_model(kdir+'model_uofr/udist_sersic.fits')
 
     def load_model(self, fname):

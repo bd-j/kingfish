@@ -10,7 +10,7 @@ rp = {'galaxy':'NGC0628',
       'utype':'UBAR',
       'ulim': 0.2,
       'snrcut':3,
-      'bands':['']}
+      'bands':None}
 
 ### Initialization
 umodel = isrf.Umodel()
@@ -26,8 +26,11 @@ galaxy = kingfish.KingfishGalaxy(**rp)
 galaxy.goodpixels = np.where( (galaxy.dust['Mdust'] > 0.0) &
                               (galaxy.dust['Mdust']/galaxy.dust['Mdust_unc'] > rp['snrcut']) &
                               (np.isfinite(galaxy.dust['Mdust']/galaxy.dust['Mdust_unc'])) & 
-                              (galaxy.dust[rp['utype']] > rp['ulim'] ) &
+                              (galaxy.dust[rp['utype']] > rp['ulim'] ) 
                              )
+
+raise ValueError()
+
 ## get the dust parameters for the good pixels
 pixel_udust = galaxy.dust[rp['utype']][galaxy.goodpixels]
 pixel_mdust = galaxy.dust['Mdust'][galaxy.goodpixels]
@@ -35,14 +38,14 @@ pixel_mdust = galaxy.dust['Mdust'][galaxy.goodpixels]
 pixel_radii = galaxy.pixel_deprojected_radii(galaxy.goodpixels)
 ## get the scaled model profiles for this galaxy at the pixl locations
 pixel_ubulge, pixel_udisk = umodel.profiles(galaxy.info, radii = pixel_radii, angular = True)
-pixel_utot = (pixel_ubulge*galaxy.spectrum['bulge']['eta']+
+pixel_ustar = (pixel_ubulge*galaxy.spectrum['bulge']['eta']+
               pixel_udisk*galaxy.spectrum['disk']['eta'])
 
 ## get a smooth model profile, convolved with a gaussian PSF
 model_radii = np.arange(rp['maxrad']-1) +1 #1 arcsec intervals up to maxrad, starting at 1 arcsecond
-model_ubulge, model_udisk = umodel.profiles(galaxy.info, radii = model_radii, angular = True, convolved = True)
-model_utot = (model_ubulge*galaxy.spectrum['bulge']['eta']+
-              model_udisk*galaxy.spectrum['disk']['eta'])
+ustar_bulge, ustar_disk = umodel.profiles(galaxy.info, radii = model_radii, angular = True, convolved = True)
+ustar_tot = (ustar_bulge*galaxy.spectrum['bulge']['eta']+
+              ustar_disk*galaxy.spectrum['disk']['eta'])
 
 ### Do it all for another resolution
 #galaxy.dataset = 'S350_110_SSS_110'
@@ -61,7 +64,7 @@ pl.plot(model_radii, model_udisk*galaxy.spectrum['disk']['eta'], ':k')
 pl.savefig(figname1)
 
 pl.figure(2)
-pl.plot(pixel_radii,pixel_udust/pixel_utot, 'ro', alpha = 0.5)
+pl.plot(pixel_radii,pixel_udust/pixel_ustar, 'ro', alpha = 0.5)
 pl.plot([0, rp['maxrad']], [1,1], 'k')
 pl.plot([0, rp['maxrad']], [avg_ratio, avg_ratio], ':k')
 pl.savefig(figname2)

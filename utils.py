@@ -70,9 +70,9 @@ def read_isrf(isrfname, wavelength):
     wave = wave*1e4
     isrf_nu=isrf_nu/isrf_nu.max()
     isrf = np.interp(wave,isrf_nu/(wave**2),wavelength)
-    return = isrf.max()  #I_lambda
+    return isrf/isrf.max()  #I_lambda
 
-def read_mp(self, galaxy = galaxy, component = component, mpdir = None):
+def read_mp(self, galaxy = '', component = 'tot', mpdir = None):
     fname = mpdir+galaxy+component+'.sed'
     logwave, logflux, logflux_intrinsic = np.loadtxt(fname, usecols = (0,1,2), unpack = True)
     spec = {}

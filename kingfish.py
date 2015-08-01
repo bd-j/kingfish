@@ -4,11 +4,12 @@ import pyfits, pywcs, pyregion
 import observate
 import utils
 
-class AnianoResults(object):
 
-    kdir = os.path.expanduser('~/SFR_FIELDS/Nearby/KINGFISH/')
-    datadir = self.kdir+'data/'
-    
+kdir = os.path.expanduser('~/SFR_FIELDS/Nearby/KINGFISH/')
+datadir = kdir+'data/'
+infodir = kdir+'info/'
+
+class AnianoResults(object):
 
     partype = 'All'
     parnames = ['Mdust','Ldust','LPDR','U_min','f_PDR','Gamaa','U_bar','qpah','Alpha']
@@ -24,6 +25,7 @@ class AnianoResults(object):
         self.galaxy = galaxy
         self.aname, self.kname = self.sanitize_name(galaxy)
         self.dataset = dataset
+        self.dirname = '{0}{1}/herschel/dustmaps/{2}/'.format(datadir, self.aname.lower(), self.dataset)
 
         self.read_dustmaps()
         self.read_imaging(bands = bands)
@@ -41,14 +43,15 @@ class AnianoResults(object):
             im.close()
             unc.close()
         mask = pyfits.open(maskname)
-        self.dustpars['mask'] = mask[0].data
+        self.dust['mask'] = mask[0].data
 
     def read_imaging(self, bands = None):
         if bands is None : bands = self.image_bands
         self.image = {}
         self.image_headers = {}
         for i, b in enumerate(bands):
-            imname = 
+            imname = '{0}Convolved_Images/{1}_{2}_{3}.fits.gz'.format(
+                self.dirname,self.aname,self.dataset,b)
             im = pyfits.open(imname)
             self.image[b] = im[0].data
             self.image_header[b] = im[0].header
@@ -66,22 +69,22 @@ class AnianoResults(object):
         pass
 
     def dust_map_names(self):
-        dirname = self.datadir+self.aname.lower()+'/herschel/dustmaps/'+self.dataset+'/'
-        subdir = +'/Results/'
-        imname = [dirname+'Results/' + self.aname+'_'+self.dataset+'_Model_'+self.partype+
-                  '{0}{1}.fits.gz'.format(self.imprefix[i], self.parnames[i])
+        imname = [self.dirname+'Results/' + self.aname+'_'+self.dataset+'_Model_'+self.partype+
+                  '_{0}{1}.fits.gz'.format(self.imprefix[i], self.parnames[i])
                   for i in xrange(len(self.parnames))]
-        uncname = imname.replace('.fits.gz','_unc.fits.gz')
-        maskname = dirname+'Convolved_Images/'+self.aname+'_'+self.dataset+'_Gal_mask.fits.gz'
+        uncname = [i.replace('.fits.gz','_unc.fits.gz') for i in imname]
+        maskname = '{0}Convolved_Images/{1}_{2}_Gal_mask.fits.gz'.format(
+            self.dirname, self.aname, self.dataset)
         return imname, uncname, maskname
         
-    def self.sanitize_name(self, galaxy):
+    def sanitize_name(self, galaxy):
         kname = galaxy.upper()
+        aname = galaxy.upper()
         #kname = kname.replace('N(0-9)', 'NGC') #blerg
         kname = kname.replace('HOL1','HOLI')
         kname = kname.replace('HOL2','HOLII')
         kname = kname.replace('M81DB','M81dB')
-        aname = name.replace('HOLII','Hol2')
+        aname = aname.replace('HOLII','Hol2')
         aname = aname.replace('HOLI','Hol1')
         aname = aname.replace('M81DB','M81dB')
         
@@ -89,17 +92,16 @@ class AnianoResults(object):
 
 class KingfishGalaxy(AnianoResults):
     
-    infodir = self.kdir+'info/'
     info = {}
 
     def __init__(self,galaxy = None, dataset = None, bands = None, **kwargs):
         self.galaxy = galaxy
         self.aname, self.kname = self.sanitize_name(galaxy)
         self.dataset = dataset
-
         self.load_data(bands = bands)
 
     def load_data(self,bands = None):
+        self.dirname = '{0}{1}/herschel/dustmaps/{2}/'.format(datadir, self.aname.lower(), self.dataset)
         self.read_dustmaps()
         self.read_imaging(bands = bands)
         self.set_basic_info()
@@ -129,12 +131,14 @@ class KingfishGalaxy(AnianoResults):
         q = self.info['b']/self.info['a']
         self.info['inclination'] = np.arccos(np.sqrt( (q^2- q0^2)/(1 - q0^2)))*(180./np.pi) + 3.0
         self.info['R_e'] = {'obs':fkh['R_EFF_BULGE'][ind]} #half-light radius in arcsec
-        self.info['R_e'] = {'phys':fkh['R_EFF_BULGE'][ind]*self.arcsec_to_kpc} #half-light radius in kpc
         self.info['mu_e'] = {'obs':fkh['MU_EFF'][ind]} #in AB mag/arcsec**2 at H band
         self.info['n_bulge'] = fkh['N_BULGE'][ind] #sersic
         self.info['H_disk'] = {'obs':fkh['R_DISK'][ind]} #exponential scale length in arcsec
-        self.info['H_disk'] = {'phys':fkh['R_DISK'][ind]*self.arcsec_to_kpc} #exponential scale length in arcsec
         self.info['mu0'] = {'obs':fkh['MU_0_DISK'][ind]} #in AB mag/arcsec**2 at H band
+        self.info['R_e']['phys'] = fkh['R_EFF_BULGE'][ind]*self.arcsec_to_kpc #half-light radius in kpc
+        self.info['H_disk']['phys'] = fkh['R_DISK'][ind]*self.arcsec_to_kpc #exponential scale length in arcsec
+        #self.info[['mu0']['phys'] =
+        #self.info[['mu_e']['phys'] =
         self.info['morph_band'] = 'twomass_H'
         self.info['type'] = sk['MORPH'][ind]
         #self.info['units'] = 'observed (", mag, etc)'
@@ -155,7 +159,7 @@ class KingfishGalaxy(AnianoResults):
             self.spectrum[c]['log_Lbol']  = np.log10(observate.Lbol(spec['wavelength'],
                                                                     spec['f_lambda_int'],wave_max = 1e5))
 
-        self.info['mu_e']['phys']=
+        #self.info['mu_e']['phys']=
         
     def bolometric_correction(self, component = 'tot', filternamelist = None):
         lightspeed = 2.998e18 #AA/s
@@ -164,7 +168,7 @@ class KingfishGalaxy(AnianoResults):
                                 self.spectrum[component]['f_lambda_int'],
                                 filterlist)
         nueff = np.array([lightspeed/f.wave_effective for f in filterlist])
-        
+        #log_nuLnu = 
         log_bc = self.spectrum[component]['log_Lbol'] - log_nuLnu
 
         return bc
@@ -179,7 +183,7 @@ class KingfishGalaxy(AnianoResults):
         u_star = observate.Lbol(wavelength,f_lambda, wave_min = 1e3, wave_max = 1e5)
         u_abs_star = observate.Lbol(wavelength,f_lambda*kappa, wave_min = 1e3, wave_max = 1e5)
 
-        return u_abs_star/u_star*u_mmp83/u_abs_mmp83
+        return u_abs_star/u_star*(u_mmp83/u_abs_mmp83)
 
     def pixel_deprojected_radii(self, pixels = None):
         wcs = pywcs.WCS(header = self.dust_header)
