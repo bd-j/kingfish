@@ -207,7 +207,7 @@ if __name__ == "__main__":
             fcat[i][b + '_unc'] = u
 
 
-    h = pyfits.hdu.image.BinTableHDU(fcat)
+    h = pyfits.hdu.table.BinTableHDU(fcat)
     h.header['FlUXUNIT'] = 'Jy'
     h.header['PAUNIT'] = 'Degrees E of N'
     h.header['APUNIT'] = 'Arcseconds'
